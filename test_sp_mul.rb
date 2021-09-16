@@ -52,9 +52,14 @@ def mult a_f,b_f
   {res.float => res.int}
 end
 
-tests=gen_random_tests(10)
+tests=gen_random_tests(100)
 
 puts "float".center(76)+"|"+"expected hexa".center(34)+"|"+"actual hexa".center(13)
+stats={}
+stats["="]=0
+stats["~"]=0
+stats["x"]=0
+
 tests.each do |test|
   args,expected=test.first
   a_h,b_h=args
@@ -62,5 +67,28 @@ tests.each do |test|
   b_f,b_i=b_h.first
   e_f,e_i=expected.first
   m_f,m_i=mult(a_f,b_f).first
-  puts "#{a_f} x #{b_f}=#{e_f}".ljust(76)+"| "+"#{i2hex(a_i)} #{i2hex(b_i)} #{i2hex(e_i)} | #{i2hex(m_i)}"
+  print "#{a_f} x #{b_f}=#{e_f}".ljust(76)+"| "+"#{i2hex(a_i)} #{i2hex(b_i)} #{i2hex(e_i)} | #{i2hex(m_i)}"
+  case (e_i-m_i).abs
+  when 0
+    puts " ="
+    stats["="]+=1
+  when 1,2
+    puts " ~"
+    stats["~"]+=1
+  else
+    puts " x"
+    stats["x"]+=1
+  end
 end
+
+puts "statistics".center(130,'=')
+stats.each do |k,v|
+  puts "#{k.ljust(20,'.')} #{v}"
+end
+puts
+correct   =100.0*stats["="]/stats.values.sum
+acceptable=100.0*(stats["="]+stats["~"])/stats.values.sum
+errors    =100.0*(stats["x"])/stats.values.sum
+puts "correct        = #{correct.round(2)} %"
+puts "almost correct = #{acceptable.round(2)} %"
+puts "errors         = #{errors.round(2)} %"
