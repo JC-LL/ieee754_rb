@@ -34,12 +34,21 @@ module IEEE_754
       expo=a.expo_bits + b.expo_bits - 127
       mant_a= (1 << 23) | a.mant_bits # 24 bits always.
       mant_b= (1 << 23) | b.mant_bits # 24 bits always.
-      mult  = mant_a * mant_b         # 48 bits always
-      # {1+23}=24bits x {1+23}=24bits -> {2+46}=48 bits !
-      # normalize : {2+46} => {1+47}
+      mult  = mant_a * mant_b         # 48 or 47 bits
+
+      # rounding :
+      grs=mult[21..23]
+
+      # normalize
+      while mult[47]!=1
+        expo-=1
+        mult=mult << 1
+      end
       expo+=1
-      # get the appropriate 24 bits : {1+47} => {1+47}-24 ={1,23}
+
+      # get the appropriate 24 bits : {1+47} => {1+47}-24 ={1+23}
       mult = mult >> 24
+
       # get mantissa without leading 1
       mant_m=mult & 0x7fffff
       #p mant_m.to_s(2)

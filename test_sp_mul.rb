@@ -1,8 +1,9 @@
+require "colorize"
+
 HANDWRITTEN_TESTS=[
   {[{6.96875               => 0x40df0000},{-0.3418                => 0xbeaf0069}] => {-2.38191875            => 0xc018715b}},
   {[{0.1235                => 0x3dfced91},{13.45                  => 0x41573333}] => {1.6610749999999999     => 0x3FD49E1B}},
-  {[{6.135321769753575e-35 => 0x06a31ad6},{5.52785975289947e+27   => 0x6d8ee44f}] => {3.3915198282108733e-07 => 0x34b614b2}},
-  {[{2432696.32            => 0x4a147ae1},{1.1209514129441334e-36 => 0x03beb852}] => {2.7269343771679935e-30 => 0x0e5d3c36}},
+  {[{6.135e-35             => 0x06A318A5},{5.52e+27               => 0x6D8EB04C}] => {3.38652E-7             => 0x34B5CFFA}},
 ]
 
 def gen_random_tests nb
@@ -52,7 +53,8 @@ def mult a_f,b_f
   {res.float => res.int}
 end
 
-tests=gen_random_tests(100)
+nb_tests=ARGV.first.to_i || 100
+tests=gen_random_tests(nb_tests)
 
 puts "float".center(76)+"|"+"expected hexa".center(34)+"|"+"actual hexa".center(13)
 stats={}
@@ -70,13 +72,13 @@ tests.each do |test|
   print "#{a_f} x #{b_f}=#{e_f}".ljust(76)+"| "+"#{i2hex(a_i)} #{i2hex(b_i)} #{i2hex(e_i)} | #{i2hex(m_i)}"
   case (e_i-m_i).abs
   when 0
-    puts " ="
+    puts " =".green
     stats["="]+=1
   when 1,2
-    puts " ~"
+    puts " ~".yellow
     stats["~"]+=1
   else
-    puts " x"
+    puts " x".red
     stats["x"]+=1
   end
 end
@@ -89,6 +91,6 @@ puts
 correct   =100.0*stats["="]/stats.values.sum
 acceptable=100.0*(stats["="]+stats["~"])/stats.values.sum
 errors    =100.0*(stats["x"])/stats.values.sum
-puts "correct        = #{correct.round(2)} %"
-puts "almost correct = #{acceptable.round(2)} %"
-puts "errors         = #{errors.round(2)} %"
+puts "correct               = #{correct.round(2)} %"
+puts "correct or acceptable = #{acceptable.round(2)} %"
+puts "errors                = #{errors.round(2)} %"
