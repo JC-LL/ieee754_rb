@@ -61,23 +61,26 @@ module IEEE_754
 
     def +(b)
       a=self
-      puts a.hex_string+" "+a.bit_string
-      puts b.hex_string+" "+b.bit_string
+      #puts a.hex_string+" "+a.bit_string
+      #puts b.hex_string+" "+b.bit_string
 
       mant_a= (1 << 23) | a.mant_bits # 24 bits always.
       mant_b= (1 << 23) | b.mant_bits # 24 bits always.
+
       expo_a=a.expo_bits
       expo_b=b.expo_bits
+
       diff=(a.expo_bits-b.expo_bits).abs
       sign=a.sign_bit
+
       # Rewrite the smaller number such that its exponent matches with the exponent of the larger number.
       if a.expo_bits > b.expo_bits
-        return a if (diff > 8+1) # b to small to affect the result.
+        return a if (diff > 2**8) # b to small to affect the result.
         mant_b=mant_b >> diff
         sign=a.sign_bit
         expo=expo_a
       elsif a.expo_bits < b.expo_bits
-        return b if (diff > 8+1) # a to small to affect the result.
+        return b if (diff > 2**8) # a to small to affect the result.
         mant_a=mant_a >> diff
         sign=b.sign_bit
         expo=expo_b
@@ -85,9 +88,6 @@ module IEEE_754
         sign=b.sign_bit
         expo=expo_b
       end
-
-      puts mant_a.to_s(2).rjust(24,'0')
-      puts mant_b.to_s(2).rjust(24,'0')
 
       case [a.sign_bit,b.sign_bit]
       when [0,0]
@@ -99,8 +99,6 @@ module IEEE_754
       when [1,1]
         add=-(mant_a+mant_b)
       end
-
-      puts add.to_s(2).rjust(24,'0')
 
       # normalize
       if add[24]==1
