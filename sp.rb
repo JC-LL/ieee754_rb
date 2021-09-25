@@ -21,7 +21,7 @@ module IEEE_754
 
     def bit_string with_blanks=true
       blank=with_blanks ? " ":""
-      [@sign_bit,@expo_bits.to_s(2),@mant_bits.to_s(2)].join(blank)
+      [@sign_bit,@expo_bits.to_s(2).rjust(8,'0'),@mant_bits.to_s(2).rjust(23,'0')].join(blank)
     end
 
     def hex_string with_0x=true
@@ -30,6 +30,7 @@ module IEEE_754
 
     def *(b)
       a=self
+
       sign=a.sign_bit ^b.sign_bit
       expo=a.expo_bits + b.expo_bits - 127
       mant_a= (1 << 23) | a.mant_bits # 24 bits always.
@@ -44,6 +45,7 @@ module IEEE_754
         expo-=1
         mult=mult << 1
       end
+
       expo+=1
 
       # get the appropriate 24 bits : {1+47} => {1+47}-24 ={1+23}
@@ -53,6 +55,68 @@ module IEEE_754
       mant_m=mult & 0x7fffff
       #p mant_m.to_s(2)
       int  = (sign << 31) | (expo << 23) | mant_m
+      Sp.new(int)
+    end
+
+
+    def +(b)
+      a=self
+      puts a.hex_string+" "+a.bit_string
+      puts b.hex_string+" "+b.bit_string
+
+      mant_a= (1 << 23) | a.mant_bits # 24 bits always.
+      mant_b= (1 << 23) | b.mant_bits # 24 bits always.
+      expo_a=a.expo_bits
+      expo_b=b.expo_bits
+      diff=(a.expo_bits-b.expo_bits).abs
+      sign=a.sign_bit
+      # Rewrite the smaller number such that its exponent matches with the exponent of the larger number.
+      if a.expo_bits > b.expo_bits
+        return a if (diff > 8+1) # b to small to affect the result.
+        mant_b=mant_b >> diff
+        sign=a.sign_bit
+        expo=expo_a
+      elsif a.expo_bits < b.expo_bits
+        return b if (diff > 8+1) # a to small to affect the result.
+        mant_a=mant_a >> diff
+        sign=b.sign_bit
+        expo=expo_b
+      else
+        sign=b.sign_bit
+        expo=expo_b
+      end
+
+      puts mant_a.to_s(2).rjust(24,'0')
+      puts mant_b.to_s(2).rjust(24,'0')
+
+      case [a.sign_bit,b.sign_bit]
+      when [0,0]
+        add=mant_a+mant_b
+      when [0,1]
+        add=mant_a-mant_b
+      when [1,0]
+        add=-mant_a+mant_b
+      when [1,1]
+        add=-(mant_a+mant_b)
+      end
+
+      puts add.to_s(2).rjust(24,'0')
+
+      # normalize
+      if add[24]==1
+        expo+=1
+        add=add >> 1
+      end
+
+      while add[23]!=1
+        expo-=1
+        add=add << 1
+      end
+
+      # get mantissa without leading 1
+      mant_a=add & 0x7fffff
+      # final packing
+      int=(sign << 31) | (expo << 23) | mant_a
       Sp.new(int)
     end
   end

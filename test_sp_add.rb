@@ -1,9 +1,9 @@
 require "colorize"
 
 HANDWRITTEN_TESTS=[
-  {[{6.96875               => 0x40df0000},{-0.3418                => 0xbeaf0069}] => {-2.38191875            => 0xc018715b}},
-  {[{0.1235                => 0x3dfced91},{13.45                  => 0x41573333}] => {1.6610749999999999     => 0x3FD49E1B}},
-  {[{6.135e-35             => 0x06A318A5},{5.52e+27               => 0x6D8EB04C}] => {3.38652E-7             => 0x34B5CFFA}},
+  {[{6.96875               => 0x40df0000},{-0.3418                => 0xbeaf0069}] => {6.62695                => 0x40D40FF9}},
+  {[{0.1235                => 0x3dfced91},{13.45                  => 0x41573333}] => {13.5735                => 0x41592D0E}},
+  {[{6.135e-35             => 0x06A318A5},{5.52e+27               => 0x6D8EB04C}] => {5.52e+27               => 0x6D8EB04C}},
 ]
 
 def gen_random_tests nb
@@ -13,10 +13,10 @@ def gen_random_tests nb
     a_f,b_f=rand_f(),rand_f()
     a_hex=f2hex(a_f)
     b_hex=f2hex(b_f)
-    e_f=a_f*b_f
+    e_f=a_f + b_f
     next if e_f > LIMIT_MAX
     next if e_f < LIMIT_MIN
-    res_f,res_hex=mult(a_f,b_f).first
+    res_f,res_hex=add(a_f,b_f).first
     args=[{a_f=>f2hex(a_f).to_i(16)}, {b_f => f2hex(b_f).to_i(16)}]
     expected={e_f=>f2hex(e_f).to_i(16)}
     h={args => expected}
@@ -46,10 +46,10 @@ LIMIT_MIN=1.1754942107 * 10**(-38)
 
 require_relative 'sp'
 
-def mult a_f,b_f
+def add a_f,b_f
   a=IEEE_754::Sp.new(a_f)
   b=IEEE_754::Sp.new(b_f)
-  res=a*b
+  res=a+b
   {res.float => res.int}
 end
 
@@ -72,8 +72,8 @@ tests.each do |test|
   a_f,a_i=a_h.first
   b_f,b_i=b_h.first
   e_f,e_i=expected.first
-  m_f,m_i=mult(a_f,b_f).first
-  print "#{a_f} x #{b_f}=#{e_f}".ljust(76)+"| "+"#{i2hex(a_i)} #{i2hex(b_i)} #{i2hex(e_i)} | #{i2hex(m_i)}"
+  m_f,m_i=add(a_f,b_f).first
+  print "#{a_f} + #{b_f}=#{e_f}".ljust(76)+"| "+"#{i2hex(a_i)} #{i2hex(b_i)} #{i2hex(e_i)} | #{i2hex(m_i)}"
   case (e_i-m_i).abs
   when 0
     puts " =".green
