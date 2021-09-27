@@ -37,7 +37,7 @@ module IEEE_754
       mant_b= (1 << 23) | b.mant_bits # 24 bits always.
       mult  = mant_a * mant_b         # 48 or 47 bits
 
-      # rounding :
+      # rounding : NIY
       grs=mult[21..23]
 
       # normalize
@@ -77,12 +77,10 @@ module IEEE_754
       if a.expo_bits > b.expo_bits
         return a if (diff > 2**8) # b to small to affect the result.
         mant_b=mant_b >> diff
-        sign=a.sign_bit
         expo=expo_a
       elsif a.expo_bits < b.expo_bits
         return b if (diff > 2**8) # a to small to affect the result.
         mant_a=mant_a >> diff
-        sign=b.sign_bit
         expo=expo_b
       else
         sign=b.sign_bit
@@ -100,12 +98,15 @@ module IEEE_754
         add=-(mant_a+mant_b)
       end
 
+      sign=add>0 ? 0 : 1
+
       # normalize
       if add[24]==1
         expo+=1
         add=add >> 1
       end
 
+      # realign
       while add[23]!=1
         expo-=1
         add=add << 1
@@ -118,22 +119,4 @@ module IEEE_754
       Sp.new(int)
     end
   end
-end
-
-if $PROGRAM_NAME==__FILE__
-  p a=IEEE_754::Sp.new(a_f=6.96875)
-  puts a.bit_string
-  puts a.hex_string
-
-  p b=IEEE_754::Sp.new(b_f=-0.3418)
-  puts b.bit_string
-  puts b.hex_string
-
-  puts "expected".center(40,'-')
-  p e=IEEE_754::Sp.new(a_f*b_f)
-  puts e.bit_string
-  puts e.hex_string
-
-  puts "actual".center(40,'-')
-  p a*b
 end
