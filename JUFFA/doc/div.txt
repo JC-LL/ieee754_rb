@@ -1,0 +1,19 @@
+To examine the rounding issue (in round-to-nearest-or-even mode only), I built the emulation code for IEEE-754 binary32 division from scratch for ease of exposition. Once that was working, I mechanically transformed the code into emulation code for IEEE-754 binary64 division. The ISO-C99 code for both, including my test frame work, is shown below. The approach differs slightly from asker's algorithm in that it performs intermediate computations in Q1.63 arithmetic for maximum accuracy and uses a table of either 8-bit or 16-bit entries for the starting approximation of the reciprocal.
+
+The rounding step basically subtracts the product of the raw quotient and the divisor from the dividend to form a remainder rem_raw. It also forms the remainder rem_inc that would result from incrementing the quotient by 1 ulp. By construction, we know that the raw quotient is sufficiently accurate that either it or its incremented value is the correctly rounded result. The remainders can be both positive, both negative, or mixed negative / positive. The remainder smaller in magnitude corresponds to the correctly rounded quotient.
+
+The only difference that exists between rounding normals and subnormals (other than the denormalization step inherent in the latter) is that tie cases cannot occur for normal results, while they can occur for subnormal results. See, for example,
+
+Miloš D. Ercegovac and Tomás Lang, "Digital Arithmetic", Morgan Kaufman, 2004, p. 452
+
+When computing in fixed-point arithmetic, the product of raw quotient and divisor is a double-length product. To compute the remainder precisely without any bits lost, we therefore change the fixed-point representation on the fly to provide additional fraction bits. For that the dividend is left shifted by the appropriate number of bits. But because we know from construction of the algorithm that the preliminary quotient is very close to the true result, we know that during subtraction from the dividend all the high-order bits will cancel. So we only need to compute and subtract the low-order product bits to compute the two remainders.
+
+Because the division of two values each in [1,2) results in a quotient in (0.5, 2), the computation of the quotient may involve a normalization step to get back into the interval [1,2), accompanied by an exponent correction. We need to account for this when lining up the dividend and the product of quotient and divisor for subtraction, see normalization_shift in the code below.
+
+Since the code below is of an exploratory nature, it was not written with extreme optimization in mind. Various tweaks are possible, as are replacements of portable code with platform-specific intrinsics or inline assembly. Likewise, the basic test framework below could be strengthened by incorporating various techniques for generating hard-to-round cases from the literature. For example, I have used division test vectors accompanying the following paper in the past:
+
+Brigitte Verdonk, Annie Cuyt, and Dennis Verschaeren. "A precision- and range-independent tool for testing floating-point arithmetic I: basic operations, square root, and remainder." ACM Transactions on Mathematical Software, Vol. 27, No. 1, March 2001, pp. 92-118.
+
+The pattern-based test vectors of my test framework were motivated by the following publication:
+
+N. L. Schryer, "A Test of a Computer's Floating-Point Unit." Computer Science Technical Report no. 89, AT&T Bell Laboratories, Murray Hill, N.J. (1981).

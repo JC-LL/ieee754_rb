@@ -1,5 +1,8 @@
 require "colorize"
 
+LIMIT_MAX=3.4028235    * 10**38
+LIMIT_MIN=1.1754942107 * 10**(-38)
+
 HANDWRITTEN_TESTS=[
   {[{6.96875               => 0x40df0000},{-0.3418                => 0xbeaf0069}] => {6.62695                => 0x40D40FF9}},
   {[{0.1235                => 0x3dfced91},{13.45                  => 0x41573333}] => {13.5735                => 0x41592D0E}},
@@ -10,7 +13,9 @@ def gen_random_tests nb
   tests=HANDWRITTEN_TESTS
   nb_gen=0
   while nb_gen < nb  do
-    a_f,b_f=rand_f(),rand_f()
+    #a_f,b_f=rand_f(),rand_f()
+    a_f=rand_f()
+    b_f=a_f*rand*rand(1..1000)
     a_hex=f2hex(a_f)
     b_hex=f2hex(b_f)
     e_f=a_f + b_f
@@ -34,15 +39,13 @@ def i2hex x
   "0x"+x.to_s(16).rjust(8,'0')
 end
 
-def rand_f
+def rand_f expo=nil
   sign=rand(2)==0 ? -1 : +1
   magn=1+rand.round(2)
-  expo=rand(-126..127).round
+  expo||=rand(-126..127).round
   numb=sign*magn*2**expo
 end
 
-LIMIT_MAX=3.4028235    * 10**38
-LIMIT_MIN=1.1754942107 * 10**(-38)
 
 require_relative 'sp'
 
@@ -66,7 +69,7 @@ stats["="]=0
 stats["~"]=0
 stats["x"]=0
 
-tests.each do |test|
+tests.each.with_index do |test,idx|
   args,expected=test.first
   a_h,b_h=args
   a_f,a_i=a_h.first
@@ -78,23 +81,25 @@ tests.each do |test|
   when 0
     puts " =".green
     stats["="]+=1
-  when 1,2
+  when 1
     puts " ~".yellow
     stats["~"]+=1
   else
+    #print "#{a_f} + #{b_f}=#{e_f}".ljust(76)+"| "+"#{i2hex(a_i)} #{i2hex(b_i)} #{i2hex(e_i)} | #{i2hex(m_i)}"
     puts " x".red
     stats["x"]+=1
   end
 end
 
+VERBOSE=false
 puts "statistics".center(130,'=')
 stats.each do |k,v|
-  puts "#{k.ljust(20,'.')} #{v}"
+  puts "#{k.ljust(20,'.')} #{v}" if VERBOSE
 end
 puts
 correct   =100.0*stats["="]/stats.values.sum
 acceptable=100.0*(stats["="]+stats["~"])/stats.values.sum
 errors    =100.0*(stats["x"])/stats.values.sum
-puts "correct               = #{correct.round(2)} %"
-puts "correct or acceptable = #{acceptable.round(2)} %"
-puts "errors                = #{errors.round(2)} %"
+puts "correct               = #{correct.round(4)} %"
+puts "correct or acceptable = #{acceptable.round(4)} %"
+puts "errors                = #{errors.round(4)} %"
